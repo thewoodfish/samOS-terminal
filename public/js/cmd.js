@@ -7,11 +7,13 @@ jQuery(function ($, undefined) {
 					this.echo(`samaritanOS v0.1.0`);
 					this.echo(`Usage: sam <command> [arg1] [arg2] [arg3] [argN]`);
 					this.echo(`These are common samaritan commands used in various situations:`);
-					this.echo(`new <name>			        creates a new samaritan with a non-unique name`);
+					this.echo(`new <name>			        creates a new samaritan with a non-unique name. Set <name> to "app" if you want to create a new app instance.`);
 					this.echo(`init <keys>			        lets your samaritan take control of the terminal`);
 					this.echo(`desc <DID>			        returns DID document and metadata of samaritan`);
 					this.echo(`profile <keyN=valueN>       update the profile of your samaritan. Apps use this data by default e.g at signups. Absence of arguments displays data`);
 					this.echo(`help                        informs you about the samaritan terminal`);
+					this.echo(`clear			            delete all the profile data`);
+
 
 					break;
 
@@ -21,7 +23,10 @@ jQuery(function ($, undefined) {
 						this.echo(`fatal: You must provide a name for your samaritan`);
 						this.echo(`usage: sam new <name>`);
 					} else {
-						this.echo(`creating your samaritan...`);
+						if (arg2 != "app")
+							this.echo(`creating your samaritan...`);
+						else	
+							this.echo(`processing...`)
 						this.pause();
 
 						fetch(getURL(`new`, `name=${arg2}`), {
@@ -167,8 +172,40 @@ jQuery(function ($, undefined) {
 												main.echo(`${res.data.msg}`);
 											else {
 												main.echo(`Profile data:`);
-												Object.entries(res.data.profile).map(([key, value]) => `${key}: ${value}`)
+												Object.entries(res.data.profile).map(([key, value]) => {
+													if (key != "status") main.echo(`    ${key}: ${value}`)
+												});
 											}
+										}
+									});
+								})();
+							})
+					}
+
+					break;
+
+				case "clear":
+					if (!inSession()) {
+						main.echo(`fatal: no samaritan initialized. See 'sam help'`);
+					} else {
+						this.echo(`deleting...`);
+						this.pause();
+
+						fetch(getURL(`clear`, `nonce=${getNonce()}`), {
+							method: 'get',
+							headers: {
+								'Content-Type': 'application/json'
+							}
+						})
+							.then(res => {
+								(async function () {
+									await res.json().then(res => {
+										main.resume();
+
+										if (res.error)
+											main.echo(`fatal: ${res.data.msg}`);
+										else {
+											main.echo(`${res.data.msg}`);
 										}
 									});
 								})();

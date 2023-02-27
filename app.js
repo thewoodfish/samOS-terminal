@@ -47,15 +47,19 @@ app.get('/profile', (req, res) => {
     manageProfile(req.query, res);
 });
 
+app.get('/clear', (req, res) => {
+    clearProfile(req.query, res);
+});
+
 // initialize Samaritan SDK
 const sam = new SamaritanSDK("ws://127.0.0.1:1509");
 let terminal = undefined;
-await sam.init();
+// await sam.init();
 
-// wait 5 seconds for initialization
-setTimeout(async () => {
-    terminal = await sam.did.auth("still plant flow death state perhaps percent study always taken information patient");
-}, 5000);
+// // wait 5 seconds for initialization
+// setTimeout(async () => {
+//     terminal = await sam.did.auth("special natural or co year idea read southern am feet points methods");
+// }, 5000);
 
 // a very simple session cache
 class SessionCache {
@@ -85,7 +89,11 @@ let silverCache = new SessionCache();
 
 async function createNewSamaritan(req, res) {
     // query network to create new Samaritan
-    const user = await sam.did.createNew(req.name);
+    let user = undefined;
+    if (req.name != "app")
+        user = await sam.did.createNew(req.name);
+    else 
+        user = await sam.did.newApiKey();
 
     // generate nonce
     const nonce = util.randomStr(12);
@@ -120,7 +128,7 @@ async function initializeSamaritan(req, res) {
                 msg: "samaritan initialization complete"
             }
         })
-        
+
     } else {
         res.send({
             data: {
@@ -174,6 +182,8 @@ async function manageProfile(req, res) {
 
             // get profile first
             profile = util.syncData(req.data.split(";"), profile);
+
+            console.log(profile);
             // set data
             await sam.db.insert(user.did, "$profile", profile);
         }
@@ -181,7 +191,8 @@ async function manageProfile(req, res) {
         return res.send({
             data: {
                 profile: profile ? profile : {},
-                type: req.data ? "set" : "get"
+                type: req.data ? "set" : "get",
+                msg: "Your profile has been updated"
             },
             error: false
         });
@@ -195,8 +206,29 @@ async function manageProfile(req, res) {
     }
 }
 
+// clear profile
+async function clearProfile(req, res) {
+    // first check for auth
+    const user = authUser(req.nonce);
+    if (user) {
+        // use the insert command instead of the delete command
+        await sam.db.insert(user.did, "$profile", {});
 
+        return res.send({
+            data: {
+                msg: "profile cleared"
+            },
+            error: false
+        });
+    } else {
+        return res.send({
+            data: {
+                msg: "samaritan not recognised"
+            },
+            error: true
+        });
+    }
+}
 
 // listen on port 3000
 app.listen(port, () => console.info(`listening on port ${port}`));
-
