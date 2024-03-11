@@ -1,65 +1,68 @@
+// Copyright (c) 2024 Algorealm, Inc.
+
 // imports
 import { createRequire } from "module";
-import path from 'path';
+import path, { parse } from 'path';
 import { fileURLToPath } from 'url';
-import { SamaritanSDK } from 'samaritan-js-sdk';
-import * as util from "./utility.js";
-import e from "express";
 
+// imports
 const require = createRequire(import.meta.url);
+const bodyParser = require('body-parser');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const express = require('express');
 const app = express();
-const port = 4000;
-const __filename = fileURLToPath(import.meta.url);
-const _Dirname = path.dirname(__filename);
+const port = 5000;
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
 
 // static files
 app.use(express.static('public'));
-app.use('/css', express.static(_Dirname + 'public/css'));
-app.use('/js', express.static(_Dirname + 'public/js'));
-app.use('/img', express.static(_Dirname + 'public/img'));
+app.use('/css', express.static(__dirname + 'public/css'));
+app.use('/js', express.static(__dirname + 'public/js'));
+app.use('/img', express.static(__dirname + 'public/img'));
 
 // set views
 app.set('views', './views');
 app.set('view engine', 'ejs');
 
-app.get('', (req, res) => {
-    res.render('terminal');
-});
+// blockchain essentials
+import { ApiPromise, WsProvider } from '@polkadot/api';
+import { ContractPromise } from '@polkadot/api-contract';
+import { mnemonicGenerate, cryptoWaitReady, blake2AsHex, xxhashAsHex } from '@polkadot/util-crypto';
+import { Keyring } from '@polkadot/keyring';
 
-app.get('/about', (req, res) => {
-    res.render('about');
-});
+// contract API import
+const chain = await import('./contract.cjs');
 
-app.get('/new', (req, res) => {
-    createNewSamaritan(req.query, res);
-});
+// contract metadata import
+import * as meta from "./metadata.js";
 
-app.get('/init', (req, res) => {
-    initializeSamaritan(req.query, res);
-});
+// storage API import
+import * as storg from "./storage.js";
 
-app.get('/desc', (req, res) => {
-    describeSamaritan(req.query, res);
-});
+// utility functions import
+import * as util from "./utility.js"
 
-app.get('/profile', (req, res) => {
-    manageProfile(req.query, res);
-});
+// blockchain config
+const contract_addr = "5DYMZQXrDPWqxSAGXJtKzTGQS4sfheYbsQGVPZMymsiksxUj";
+const wsProvider = new WsProvider('ws://127.0.0.1:9944');
+const api = await ApiPromise.create({ provider: wsProvider });
+const contract = new ContractPromise(api, meta.metadata(), contract_addr);
+const keyring = new Keyring({ type: 'sr25519' });
 
-app.get('/clear', (req, res) => {
-    clearProfile(req.query, res);
-});
+// test accounts
+let alice = undefined;
+let bob = undefined;
 
-// initialize Samaritan SDK
-const sam = new SamaritanSDK("ws://127.0.0.1:1509");
-let terminal = undefined;
-// await sam.init();
-
-// // wait 5 seconds for initialization
-// setTimeout(async () => {
-//     terminal = await sam.did.auth("special natural or co year idea read southern am feet points methods");
-// }, 5000);
+// wait 5 secs for the wasm init
+setTimeout(async () => {
+    await cryptoWaitReady().then(() => {
+        alice = keyring.addFromUri('//Alice');    // for running tests
+        bob = keyring.addFromUri('//Bob');    // for running tests
+    });
+}, 5000);
 
 // a very simple session cache
 class SessionCache {
@@ -85,150 +88,11 @@ class SessionCache {
     }
 }
 
-let silverCache = new SessionCache();
+let delphiCache = new SessionCache();
 
-async function createNewSamaritan(req, res) {
-    // query network to create new Samaritan
-    let user = undefined;
-    if (req.name != "app")
-        user = await sam.did.createNew(req.name);
-    else 
-        user = await sam.did.newApiKey();
+// route request handlers
+app.get('/', (req, res) => {
+    res.render('index', { text: 'This is sparta' });
+});
 
-    // generate nonce
-    const nonce = util.randomStr(12);
-
-    // cache the user data
-    silverCache.set(nonce, {
-        did: user.did
-    });
-
-    // return details
-    res.send({
-        nonce,
-        data: user,
-        error: false
-    });
-}
-
-async function initializeSamaritan(req, res) {
-    // get the keys and query the network to check for existence of Samaritan
-    const auth = await sam.did.auth(req.keys);
-
-    if (auth.exists && auth.did.indexOf("sam:root") != -1) {
-        // set session
-        const nonce = util.randomStr(12);
-        silverCache.set(nonce, {
-            did: auth.did
-        });
-
-        res.send({
-            nonce,
-            data: {
-                msg: "samaritan initialization complete"
-            }
-        })
-
-    } else {
-        res.send({
-            data: {
-                msg: "samaritan does not exist"
-            }
-        })
-    }
-}
-
-// describe a samaritan 
-async function describeSamaritan(req, res) {
-    const didDoc = await sam.did.describe(req.did);
-
-    if (didDoc) {
-        return res.send({
-            data: {
-                did: req.did,
-                name: didDoc.name
-            },
-            error: false
-        });
-    } else {
-        return res.send({
-            data: {
-                msg: "samaritan not recognised"
-            },
-            error: true
-        });
-    }
-}
-
-// check for nonce
-function authUser(nonce) {
-    if (silverCache.has(nonce)) {
-        return silverCache.get(nonce);
-    }
-
-    return false;
-}
-
-// get or set profile 
-async function manageProfile(req, res) {
-    // first check for auth
-    const user = authUser(req.nonce);
-    if (user) {
-        let profile = await sam.db.get(user.did, "$profile");
-        // check if it's a get or set
-        if (req.data) {
-            // if profile does not exist, set it
-            profile = profile ? profile : {};
-
-            // get profile first
-            profile = util.syncData(req.data.split(";"), profile);
-
-            console.log(profile);
-            // set data
-            await sam.db.insert(user.did, "$profile", profile);
-        }
-
-        return res.send({
-            data: {
-                profile: profile ? profile : {},
-                type: req.data ? "set" : "get",
-                msg: "Your profile has been updated"
-            },
-            error: false
-        });
-    } else {
-        return res.send({
-            data: {
-                msg: "samaritan not recognised"
-            },
-            error: true
-        });
-    }
-}
-
-// clear profile
-async function clearProfile(req, res) {
-    // first check for auth
-    const user = authUser(req.nonce);
-    if (user) {
-        // use the insert command instead of the delete command
-        await sam.db.insert(user.did, "$profile", {});
-
-        return res.send({
-            data: {
-                msg: "profile cleared"
-            },
-            error: false
-        });
-    } else {
-        return res.send({
-            data: {
-                msg: "samaritan not recognised"
-            },
-            error: true
-        });
-    }
-}
-
-// listen on port 3000
 app.listen(port, () => console.info(`listening on port ${port}`));

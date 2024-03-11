@@ -1,7 +1,7 @@
 {
-  "name": "property_oracle",
-  "version": "1.0.0",
-  "description": "Property oracle helps resolve various property issues",
+  "name": "samaritan_os",
+  "version": "1.0.1",
+  "description": "SamaritanOS aims to give digital users control and soverignty over their data stored across applications on the internet.",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

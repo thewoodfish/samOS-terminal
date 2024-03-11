@@ -4,16 +4,13 @@ jQuery(function ($, undefined) {
 			switch (arg1) {
 				case "help":
 				case "":
-					this.echo(`samaritanOS v0.1.0`);
+					this.echo(`samaritanOS v0.5`);
 					this.echo(`Usage: sam <command> [arg1] [arg2] [arg3] [argN]`);
 					this.echo(`These are common samaritan commands used in various situations:`);
 					this.echo(`new <name>			        creates a new samaritan with a non-unique name. Set <name> to "app" if you want to create a new app instance.`);
-					this.echo(`init <keys>			        lets your samaritan take control of the terminal`);
-					this.echo(`desc <DID>			        returns DID document and metadata of samaritan`);
-					this.echo(`profile <keyN=valueN>       update the profile of your samaritan. Apps use this data by default e.g at signups. Absence of arguments displays data`);
-					this.echo(`help                        informs you about the samaritan terminal`);
-					this.echo(`clear			            delete all the profile data`);
-
+					this.echo(`init <keys>			        lets your samaritan take control of the terminal. All database operations will include your DID in their header.`);
+					this.echo(`desc <DID>			        returns DID document and metadata of samaritan.`);
+					this.echo(`help                        informs you about the samaritan terminal.`);
 
 					break;
 
@@ -25,10 +22,11 @@ jQuery(function ($, undefined) {
 					} else {
 						if (arg2 != "app")
 							this.echo(`creating your samaritan...`);
-						else	
+						else
 							this.echo(`processing...`)
-						this.pause();
 
+						// block
+						this.pause();
 						fetch(getURL(`new`, `name=${arg2}`), {
 							method: 'get',
 							headers: {
@@ -37,25 +35,18 @@ jQuery(function ($, undefined) {
 						})
 							.then(async res => {
 								await res.json().then(res => {
+									// resume screen
 									main.resume();
 
 									if (res.error)
-										main.echo(`fatal: ${res.data.msg}`);
+										main.echo(res.data.msg);
 									else {
 										// set nonce for further communication
 										sessionStorage.setItem("nonce", res.nonce);
 
 										main.echo("samaritan successfully added to the network");
-
 										main.echo(`DID:     ${res.data.did}`);
-										main.echo(`Keys:    ${res.data.keys} ([[b;red;] You have 30 seconds to copy them.])`);
-
-										main.pause();
-										setTimeout(() => {
-											main.update(-1, "Keys:    ****************************************************************************************************").resume();
-										}, 30000);
 									}
-
 								});
 							})
 					}
@@ -144,77 +135,6 @@ jQuery(function ($, undefined) {
 
 					break;
 
-				case "profile":
-					if (!inSession()) {
-						main.echo(`fatal: no samaritan initialized. See 'sam help'`);
-					} else {
-						if (!arg2)
-							this.echo(`fetching profile...`);
-						else
-							this.echo(`updating profile...`);
-						this.pause();
-
-						fetch(getURL(`profile`, `nonce=${getNonce()}`, `data=${arg2.replaceAll(" ", ";")}`), {
-							method: 'get',
-							headers: {
-								'Content-Type': 'application/json'
-							}
-						})
-							.then(res => {
-								(async function () {
-									await res.json().then(res => {
-										main.resume();
-
-										if (res.error)
-											main.echo(`fatal: ${res.data.msg}`);
-										else {
-											if (res.data.type == "set")
-												main.echo(`${res.data.msg}`);
-											else {
-												main.echo(`Profile data:`);
-												Object.entries(res.data.profile).map(([key, value]) => {
-													if (key != "status") main.echo(`    ${key}: ${value}`)
-												});
-											}
-										}
-									});
-								})();
-							})
-					}
-
-					break;
-
-				case "clear":
-					if (!inSession()) {
-						main.echo(`fatal: no samaritan initialized. See 'sam help'`);
-					} else {
-						this.echo(`deleting...`);
-						this.pause();
-
-						fetch(getURL(`clear`, `nonce=${getNonce()}`), {
-							method: 'get',
-							headers: {
-								'Content-Type': 'application/json'
-							}
-						})
-							.then(res => {
-								(async function () {
-									await res.json().then(res => {
-										main.resume();
-
-										if (res.error)
-											main.echo(`fatal: ${res.data.msg}`);
-										else {
-											main.echo(`${res.data.msg}`);
-										}
-									});
-								})();
-							})
-					}
-
-					break;
-
-
 				default:
 					this.echo(`sam: '${arg1}' is not a samaritan command. See 'sam help'.`);
 			}
@@ -223,7 +143,6 @@ jQuery(function ($, undefined) {
 		greetings: function () {
 			return greetings.innerHTML
 		},
-
 		name: 'samaritan',
 		historySize: 10,
 		checkArity: false,
@@ -233,22 +152,6 @@ jQuery(function ($, undefined) {
 		}
 	});
 });
-
-function downloadObjectAsJson(exportObj, exportName) {
-	var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(exportObj);
-	var dn = document.createElement('a');
-
-	dn.setAttribute("href", dataStr);
-	dn.setAttribute("download", exportName + ".jsonld");
-	document.body.appendChild(dn); // required for firefox
-
-	dn.click();
-	dn.remove();
-}
-
-function qs(tag) {
-	return document.querySelector(tag);
-}
 
 function inSession() {
 	var exists = false;
@@ -269,38 +172,10 @@ function isDID(str) {
 	return true;
 }
 
-function isJSONLink(str) {
-	if (str.indexOf("http") == -1 || !str.endsWith(".json"))
-		return false;
-
-	return true;
-}
-
-function isGoodURL(url) {
-	let isErrorFree = true;
-
-	// break it up
-	let box = url.split("/");
-
-	// first, the url must start with a DID URI
-	if (!url.startsWith("did:sam:root:") || box.length != 4)
-		isErrorFree = false;
-
-	return isErrorFree;
-}
-
-function isGoodMode(mode) {
-	for (var i = 0; i < mode.length; i++)
-		if (parseInt(mode[i]) > 7 || parseInt(mode[i] < 0))
-			return false;
-
-	return true;
-}
-
 function getURL() {
 	let url = `\\${arguments[0]}?`;
 	for (var i = 1; i < arguments.length; i++)
-		url += `${arguments[i]}&`;
+		url += `${(i != 1 ? '&' : "") + arguments[i]}`;
 
 	return url;
 }
