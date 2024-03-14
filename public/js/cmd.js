@@ -3,137 +3,148 @@ jQuery(function ($, undefined) {
 		sam: function (arg1 = "", arg2 = "", arg3 = "", arg4 = "", arg5 = "") {
 			switch (arg1) {
 				case "help":
-				case "":
+				case "": {
 					this.echo(`samaritanOS v0.5`);
 					this.echo(`Usage: sam <command> [arg1] [arg2] [arg3] [argN]`);
 					this.echo(`These are common samaritan commands used in various situations:`);
-					this.echo(`new <name>			        creates a new samaritan with a non-unique name. Set <name> to "app" if you want to create a new app instance.`);
-					this.echo(`init <keys>			        lets your samaritan take control of the terminal. All database operations will include your DID in their header.`);
-					this.echo(`desc <DID>			        returns DID document and metadata of samaritan.`);
-					this.echo(`help                        informs you about the samaritan terminal.`);
+					this.echo(`new [app] <mnemonic>			    creates a new samaritan. Specify "app" if you want to create a new app instance.`);
+					this.echo(`init <mnemonic>		                initializes an authenticated session into the terminal.`);
+					this.echo(`kill      			                delete a samaritan from the network. It must be the same account that created it that performs the operation.`);
+					this.echo(`desc <DID>			                returns DID document and metadata of samaritan.`);
+					this.echo(`help                                informs you about the samaritan terminal.`);
 
 					break;
+				}
+				case "new": {
+					// collect the parameters
+					let mnemonics = "";
 
-				case "new":
+					// check if it's an app type
+					const start = arg2 == "app" ? 2 : 1;
+					for (var i = start; i < 15; i++) arguments[i] ? mnemonics += `${arguments[i]}${ i < (start + 11) ? `~` : `` }` : ``;
+
 					// check argument conformance
-					if (!arg2) {
-						this.echo(`fatal: You must provide a name for your samaritan`);
-						this.echo(`usage: sam new <name>`);
+					if (mnemonics.split("~").length != 12) {
+						this.echo(`Error: Please enter a valid 12 words mnemonic`);
+						this.echo(`Example: sam [app] init apple book cat dog house tree chair car ball sun moon door`)
 					} else {
-						if (arg2 != "app")
-							this.echo(`creating your samaritan...`);
-						else
-							this.echo(`processing...`)
+						this.echo(`Processing...`);
 
-						// block
+						// block terminal
 						this.pause();
-						fetch(getURL(`new`, `name=${arg2}`), {
+						fetch(getURL(`new`, `type=${arg2}`, `mnemonic=${mnemonics}`), {
 							method: 'get',
 							headers: {
 								'Content-Type': 'application/json'
 							}
 						})
 							.then(async res => {
-								await res.json().then(res => {
-									// resume screen
+								await res.json().then(response => {
+									// resume terminal
 									main.resume();
 
-									if (res.error)
-										main.echo(res.data.msg);
-									else {
-										// set nonce for further communication
-										sessionStorage.setItem("nonce", res.nonce);
+									console.log(response);
+									if (response.error) {
+										main.echo(response.data.msg);
+									} else {
+										// clear seeds
+										main.clear();
 
-										main.echo("samaritan successfully added to the network");
-										main.echo(`DID:     ${res.data.did}`);
+										// set nonce for further communication
+										sessionStorage.setItem("nonce", response.data.nonce);
+
+										main.echo("Samaritan successfully added to the network");
+										main.echo(`DID: ${response.data.did}`);
 									}
 								});
 							})
 					}
 
 					break;
-				case "init":
+				}
+
+				case "kill": {
 					// check argument conformance
-					if (!arg2 || arguments.length > 2) {
-						this.echo(`fatal: you must provide your samaritan keys`);
-						this.echo(`usage: sam init <keys> e.g sam init "bake egypt below..."`);
-					} else {
+					this.push(function (verdict) {
+						if (verdict == "Y") {
+							this.echo(`Processing...`);
 
-						// check length of mnemonic
-						if (arg2.split(/\s+/).length != 12) {
-							this.echo(`fatal: invalid number of mnemonic`);
-						} else {
-							// clear seeds
-							this.clear();
-							this.echo(`initializing samaritan...`);
+							// block terminal
 							this.pause();
-
-							fetch(getURL(`init`, `keys=${arg2}`), {
+							fetch(getURL(`del`, `nonce=${getNonce()}`), {
 								method: 'get',
 								headers: {
 									'Content-Type': 'application/json'
 								}
 							})
 								.then(async res => {
-									await res.json().then(res => {
+									await res.json().then(response => {
+										// resume terminal
 										main.resume();
 
-										if (res.error)
-											main.echo(`fatal: ${res.data.msg}`);
-										else {
-											// set nonce for further communication
-											sessionStorage.setItem("nonce", res.nonce);
-											main.echo(`${res.data.msg}`);
+										if (response.error) {
+											main.echo(response.data.msg);
+										} else {
+											main.echo("Samaritan successfully deleted from the network");
 										}
+										main.pop();
 									});
 								})
-						}
-					}
-
-					break;
-
-				case "desc":
-					if (!inSession()) {
-						main.echo(`fatal: no samaritan recognized. See 'sam help'`)
-					} else {
-						// check argument conformance
-						if (!arg2) {
-							this.echo(`fatal: you must provide DID to lookup`);
-							this.echo(`usage: sam find <DID>`);
 						} else {
-							// check did format
-							if (!isDID(arg2)) {
-								this.echo(`fatal: invalid DID format`);
-								this.echo(`expected DID format: did:sam:root:<address>`);
-							} else {
-								this.echo(`querying network...`);
-								this.pause();
-
-								fetch(getURL(`desc`, `did=${arg2}`), {
-									method: 'get',
-									headers: {
-										'Content-Type': 'application/json'
-									}
-								})
-									.then(res => {
-										(async function () {
-											await res.json().then(res => {
-												main.resume();
-
-												if (res.error)
-													main.echo(`fatal: ${res.data.msg}`);
-												else {
-													main.echo(`DID:     ${arg2}`);
-													main.echo(`Name:    ${res.data.name}`);
-												}
-											})
-										})();
-									})
-							}
+							main.pop();
 						}
+					}, {
+						prompt: 'Are you sure you want to proceed? This is a very destructive operation (Y/n): ',
+						onPop: function (before, after) {
+							verdict.pop();
+						},
+						label: "verdict",
+					});
+
+					break;
+				}
+
+				case "init": {
+					// check argument conformance
+					if (!arguments[11]) {
+						this.echo(`Error: Please enter a valid 12 words mnemonic`);
+						this.echo(`Example: sam init apple book cat dog house tree chair car ball sun moon door`)
+					} else {
+						this.echo(`Initializing...`);
+
+						// collect the parameters
+						let mnemonics = "";
+						for (var i = 1; i < 13; i++) arguments[i] ? mnemonics += `${arguments[i]}${ i != 12 ? `~` : `` }` : ``;
+
+						// block terminal
+						this.pause();
+						fetch(getURL(`init`, `mnemonic=${mnemonics}`), {
+							method: 'get',
+							headers: {
+								'Content-Type': 'application/json'
+							}
+						})
+							.then(async res => {
+								await res.json().then(response => {
+									// resume terminal
+									main.resume();
+
+									console.log(response);
+									if (response.error) {
+										main.echo(`${response.data.msg}`);
+									} else {
+										// set nonce for further communication
+										sessionStorage.setItem("nonce", response.data.nonce);
+
+										main.echo("Session initialization complete.");
+										main.echo(`DID: ${response.data.did}`);
+									}
+								});
+							})
 					}
 
 					break;
+				}
 
 				default:
 					this.echo(`sam: '${arg1}' is not a samaritan command. See 'sam help'.`);
