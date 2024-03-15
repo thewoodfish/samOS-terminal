@@ -110,6 +110,10 @@ app.get('/init', (req, res) => {
     initializeSession(req.query, res);
 });
 
+app.get('/desc', (req, res) => {
+    describeSamaritan(req.query, res);
+});
+
 
 // create a new Samaritan
 async function createNewSamaritan(req, res) {
@@ -205,10 +209,10 @@ async function initializeSession(req, res) {
         const mnemonic = req.mnemonic.replaceAll("~", " ");
         const user = keyring.createFromUri(mnemonic, 'sr25519');
 
-        // call contract to remove Samaritan
+        // call contract to fetch DID document CID
         await chain.authAccount(api, contract, user).then(async result => {
             if (JSON.stringify(result).indexOf("error") > -1) {
-                throw new Error("The account is not funded. Please fund your account from Alice/Bob on PolkadotJS.");
+                throw new Error("Samaritan account not recognized onchain.");
             } else {
                 const [ipfsAddress, type] = util.getStringStartingFrom('Q', util.decodeContractData(result)).split("#");
                 if (ipfsAddress) {
@@ -236,6 +240,30 @@ async function initializeSession(req, res) {
                 }
             }
         });
+    } catch (e) {
+        return res.send({
+            data: {
+                msg: e.toString()
+            },
+            error: true
+        })
+    }
+}
+
+// return DID Document
+async function describeSamaritan(req, res) {
+    try {
+        let sessionCache = authUser(req.nonce);
+        if (sessionCache) {
+            // return the DID document stored in session cache
+            return res.send({
+                data: {
+                    did: sessionCache.samaritanDID,
+                    didDocument: sessionCache.didDocument,
+                },
+                error: false
+            })
+        } else throw new Error("Account not recognized. Run the `init` command.");
     } catch (e) {
         return res.send({
             data: {

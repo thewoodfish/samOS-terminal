@@ -1,5 +1,5 @@
 jQuery(function ($, undefined) {
-	var main = $('body').terminal({
+	const main = $('body').terminal({
 		sam: function (arg1 = "", arg2 = "", arg3 = "", arg4 = "", arg5 = "") {
 			switch (arg1) {
 				case "help":
@@ -10,7 +10,7 @@ jQuery(function ($, undefined) {
 					this.echo(`new [app] <mnemonic>			    creates a new samaritan. Specify "app" if you want to create a new app instance.`);
 					this.echo(`init <mnemonic>		                initializes an authenticated session into the terminal.`);
 					this.echo(`kill      			                delete a samaritan from the network. It must be the same account that created it that performs the operation.`);
-					this.echo(`desc <DID>			                returns DID document and metadata of samaritan.`);
+					this.echo(`desc      			                returns DID document and metadata of a samaritan.`);
 					this.echo(`help                                informs you about the samaritan terminal.`);
 
 					break;
@@ -21,7 +21,7 @@ jQuery(function ($, undefined) {
 
 					// check if it's an app type
 					const start = arg2 == "app" ? 2 : 1;
-					for (var i = start; i < 15; i++) arguments[i] ? mnemonics += `${arguments[i]}${ i < (start + 11) ? `~` : `` }` : ``;
+					for (var i = start; i < 15; i++) arguments[i] ? mnemonics += `${arguments[i]}${i < (start + 11) ? `~` : ``}` : ``;
 
 					// check argument conformance
 					if (mnemonics.split("~").length != 12) {
@@ -114,7 +114,7 @@ jQuery(function ($, undefined) {
 
 						// collect the parameters
 						let mnemonics = "";
-						for (var i = 1; i < 13; i++) arguments[i] ? mnemonics += `${arguments[i]}${ i != 12 ? `~` : `` }` : ``;
+						for (var i = 1; i < 13; i++) arguments[i] ? mnemonics += `${arguments[i]}${i != 12 ? `~` : ``}` : ``;
 
 						// block terminal
 						this.pause();
@@ -128,8 +128,6 @@ jQuery(function ($, undefined) {
 								await res.json().then(response => {
 									// resume terminal
 									main.resume();
-
-									console.log(response);
 									if (response.error) {
 										main.echo(`${response.data.msg}`);
 									} else {
@@ -142,6 +140,38 @@ jQuery(function ($, undefined) {
 								});
 							})
 					}
+
+					break;
+				}
+
+				case "desc": {
+					this.echo(`Fetching data...`);
+
+					// block terminal
+					this.pause();
+					fetch(getURL(`desc`, `nonce=${getNonce()}`), {
+						method: 'get',
+						headers: {
+							'Content-Type': 'application/json'
+						}
+					})
+						.then(async res => {
+							await res.json().then(response => {
+								// resume terminal
+								main.resume();
+
+								console.log(response);
+								if (response.error) {
+									main.echo(`${response.data.msg}`);
+								} else {
+									// display document data
+									main.echo(`Samaritan DID: ${response.data.did}`);
+									main.echo(`KILT DID Document: {`)
+									printObject(response.data.didDocument, main, 4);
+									main.echo(`}`)
+								}
+							});
+						});
 
 					break;
 				}
@@ -191,17 +221,32 @@ function getURL() {
 	return url;
 }
 
-var printObj = function (obj) {
-	var string = '';
+function printObject(obj, main, indent = 0) {
+    // Helper function to create indentation
+    const createIndent = (indent) => ' '.repeat(indent);
 
-	for (var prop in obj) {
-		if (typeof obj[prop] == 'string') {
-			string += prop + ': ' + obj[prop] + '; \n';
-		}
-		else {
-			string += prop + ': { \n' + print(obj[prop]) + '}';
-		}
-	}
+    // Iterate over each key-value pair in the object
+    for (const key in obj) {
+        if (Array.isArray(obj[key])) {
+            main.echo(createIndent(indent) + key + ': [');
 
-	return string;
+            // Iterate over each element in the array
+            obj[key].forEach((element) => {
+                if (typeof element === 'object') {
+                    printObject(element, main, indent + 4);
+                } else {
+                    main.echo(createIndent(indent + 4) + element);
+                }
+            });
+
+            main.echo(createIndent(indent) + ']');
+        } else if (typeof obj[key] === 'object' && obj[key] !== null) {
+            main.echo(createIndent(indent) + key + ': {');
+            printObject(obj[key], main, indent + 4);
+            main.echo(createIndent(indent) + '}');
+        } else {
+            main.echo(createIndent(indent) + key + ': ' + obj[key]);
+        }
+    }
 }
+
