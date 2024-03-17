@@ -1,7 +1,7 @@
 export function metadata() {
     return {
         "source": {
-            "hash": "0xec65d309896377bf0baece730e01f2034522ee8d537472e102c854be2d0f3e3a",
+            "hash": "0x7b765c710b106a466a1b31fe4487c84c10a30495d24efa9fe3ab334642231d2c",
             "language": "ink! 4.3.0",
             "compiler": "rustc 1.75.0-nightly",
             "build_info": {
@@ -36,7 +36,7 @@ export function metadata() {
                             "ink_primitives",
                             "ConstructorResult"
                         ],
-                        "type": 2
+                        "type": 3
                     },
                     "selector": "0x9bae9d5e"
                 }
@@ -47,38 +47,38 @@ export function metadata() {
                     "displayName": [
                         "AccountId"
                     ],
-                    "type": 10
+                    "type": 12
                 },
                 "balance": {
                     "displayName": [
                         "Balance"
                     ],
-                    "type": 12
+                    "type": 14
                 },
                 "blockNumber": {
                     "displayName": [
                         "BlockNumber"
                     ],
-                    "type": 15
+                    "type": 17
                 },
                 "chainExtension": {
                     "displayName": [
                         "ChainExtension"
                     ],
-                    "type": 16
+                    "type": 18
                 },
                 "hash": {
                     "displayName": [
                         "Hash"
                     ],
-                    "type": 13
+                    "type": 15
                 },
                 "maxEventTopics": 4,
                 "timestamp": {
                     "displayName": [
                         "Timestamp"
                     ],
-                    "type": 14
+                    "type": 16
                 }
             },
             "events": [
@@ -92,7 +92,7 @@ export function metadata() {
                                 "displayName": [
                                     "AccountId"
                                 ],
-                                "type": 10
+                                "type": 12
                             }
                         }
                     ],
@@ -109,7 +109,7 @@ export function metadata() {
                                 "displayName": [
                                     "AccountId"
                                 ],
-                                "type": 10
+                                "type": 12
                             }
                         }
                     ],
@@ -122,7 +122,7 @@ export function metadata() {
                     "ink",
                     "LangError"
                 ],
-                "type": 4
+                "type": 5
             },
             "messages": [
                 {
@@ -133,7 +133,7 @@ export function metadata() {
                                 "displayName": [
                                     "bool"
                                 ],
-                                "type": 5
+                                "type": 6
                             }
                         },
                         {
@@ -141,6 +141,15 @@ export function metadata() {
                             "type": {
                                 "displayName": [
                                     "IpfsAddress"
+                                ],
+                                "type": 0
+                            }
+                        },
+                        {
+                            "label": "ss58_address",
+                            "type": {
+                                "displayName": [
+                                    "SS58Address"
                                 ],
                                 "type": 0
                             }
@@ -158,7 +167,7 @@ export function metadata() {
                             "ink",
                             "MessageResult"
                         ],
-                        "type": 6
+                        "type": 7
                     },
                     "selector": "0x6030efe9"
                 },
@@ -176,7 +185,7 @@ export function metadata() {
                             "ink",
                             "MessageResult"
                         ],
-                        "type": 6
+                        "type": 7
                     },
                     "selector": "0xb476f936"
                 },
@@ -184,7 +193,7 @@ export function metadata() {
                     "args": [],
                     "default": false,
                     "docs": [
-                        " Authenticate an account and return it DID document CID"
+                        " Authenticate an account and return its DID document CID"
                     ],
                     "label": "auth_account",
                     "mutates": true,
@@ -194,9 +203,37 @@ export function metadata() {
                             "ink",
                             "MessageResult"
                         ],
-                        "type": 9
+                        "type": 10
                     },
                     "selector": "0x287e57c7"
+                },
+                {
+                    "args": [
+                        {
+                            "label": "ss58_address",
+                            "type": {
+                                "displayName": [
+                                    "Vec"
+                                ],
+                                "type": 0
+                            }
+                        }
+                    ],
+                    "default": false,
+                    "docs": [
+                        " Verify if a DID exists in contract storage"
+                    ],
+                    "label": "did_exists",
+                    "mutates": true,
+                    "payable": true,
+                    "returnType": {
+                        "displayName": [
+                            "ink",
+                            "MessageResult"
+                        ],
+                        "type": 11
+                    },
+                    "selector": "0x007b8a37"
                 }
             ]
         },
@@ -237,6 +274,15 @@ export function metadata() {
                                     }
                                 },
                                 "name": "accounts"
+                            },
+                            {
+                                "layout": {
+                                    "leaf": {
+                                        "key": "0x00000000",
+                                        "ty": 2
+                                    }
+                                },
+                                "name": "addresses"
                             }
                         ],
                         "name": "SamOs"
@@ -268,12 +314,22 @@ export function metadata() {
                 "id": 2,
                 "type": {
                     "def": {
+                        "sequence": {
+                            "type": 0
+                        }
+                    }
+                }
+            },
+            {
+                "id": 3,
+                "type": {
+                    "def": {
                         "variant": {
                             "variants": [
                                 {
                                     "fields": [
                                         {
-                                            "type": 3
+                                            "type": 4
                                         }
                                     ],
                                     "index": 0,
@@ -282,7 +338,7 @@ export function metadata() {
                                 {
                                     "fields": [
                                         {
-                                            "type": 4
+                                            "type": 5
                                         }
                                     ],
                                     "index": 1,
@@ -294,11 +350,11 @@ export function metadata() {
                     "params": [
                         {
                             "name": "T",
-                            "type": 3
+                            "type": 4
                         },
                         {
                             "name": "E",
-                            "type": 4
+                            "type": 5
                         }
                     ],
                     "path": [
@@ -307,7 +363,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 3,
+                "id": 4,
                 "type": {
                     "def": {
                         "tuple": []
@@ -315,7 +371,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 4,
+                "id": 5,
                 "type": {
                     "def": {
                         "variant": {
@@ -334,53 +390,11 @@ export function metadata() {
                 }
             },
             {
-                "id": 5,
+                "id": 6,
                 "type": {
                     "def": {
                         "primitive": "bool"
                     }
-                }
-            },
-            {
-                "id": 6,
-                "type": {
-                    "def": {
-                        "variant": {
-                            "variants": [
-                                {
-                                    "fields": [
-                                        {
-                                            "type": 7
-                                        }
-                                    ],
-                                    "index": 0,
-                                    "name": "Ok"
-                                },
-                                {
-                                    "fields": [
-                                        {
-                                            "type": 4
-                                        }
-                                    ],
-                                    "index": 1,
-                                    "name": "Err"
-                                }
-                            ]
-                        }
-                    },
-                    "params": [
-                        {
-                            "name": "T",
-                            "type": 7
-                        },
-                        {
-                            "name": "E",
-                            "type": 4
-                        }
-                    ],
-                    "path": [
-                        "Result"
-                    ]
                 }
             },
             {
@@ -392,7 +406,7 @@ export function metadata() {
                                 {
                                     "fields": [
                                         {
-                                            "type": 3
+                                            "type": 8
                                         }
                                     ],
                                     "index": 0,
@@ -401,7 +415,7 @@ export function metadata() {
                                 {
                                     "fields": [
                                         {
-                                            "type": 8
+                                            "type": 5
                                         }
                                     ],
                                     "index": 1,
@@ -413,11 +427,11 @@ export function metadata() {
                     "params": [
                         {
                             "name": "T",
-                            "type": 3
+                            "type": 8
                         },
                         {
                             "name": "E",
-                            "type": 8
+                            "type": 5
                         }
                     ],
                     "path": [
@@ -427,6 +441,48 @@ export function metadata() {
             },
             {
                 "id": 8,
+                "type": {
+                    "def": {
+                        "variant": {
+                            "variants": [
+                                {
+                                    "fields": [
+                                        {
+                                            "type": 4
+                                        }
+                                    ],
+                                    "index": 0,
+                                    "name": "Ok"
+                                },
+                                {
+                                    "fields": [
+                                        {
+                                            "type": 9
+                                        }
+                                    ],
+                                    "index": 1,
+                                    "name": "Err"
+                                }
+                            ]
+                        }
+                    },
+                    "params": [
+                        {
+                            "name": "T",
+                            "type": 4
+                        },
+                        {
+                            "name": "E",
+                            "type": 9
+                        }
+                    ],
+                    "path": [
+                        "Result"
+                    ]
+                }
+            },
+            {
+                "id": 9,
                 "type": {
                     "def": {
                         "variant": {
@@ -450,7 +506,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 9,
+                "id": 10,
                 "type": {
                     "def": {
                         "variant": {
@@ -467,7 +523,7 @@ export function metadata() {
                                 {
                                     "fields": [
                                         {
-                                            "type": 4
+                                            "type": 5
                                         }
                                     ],
                                     "index": 1,
@@ -483,7 +539,7 @@ export function metadata() {
                         },
                         {
                             "name": "E",
-                            "type": 4
+                            "type": 5
                         }
                     ],
                     "path": [
@@ -492,13 +548,55 @@ export function metadata() {
                 }
             },
             {
-                "id": 10,
+                "id": 11,
+                "type": {
+                    "def": {
+                        "variant": {
+                            "variants": [
+                                {
+                                    "fields": [
+                                        {
+                                            "type": 6
+                                        }
+                                    ],
+                                    "index": 0,
+                                    "name": "Ok"
+                                },
+                                {
+                                    "fields": [
+                                        {
+                                            "type": 5
+                                        }
+                                    ],
+                                    "index": 1,
+                                    "name": "Err"
+                                }
+                            ]
+                        }
+                    },
+                    "params": [
+                        {
+                            "name": "T",
+                            "type": 6
+                        },
+                        {
+                            "name": "E",
+                            "type": 5
+                        }
+                    ],
+                    "path": [
+                        "Result"
+                    ]
+                }
+            },
+            {
+                "id": 12,
                 "type": {
                     "def": {
                         "composite": {
                             "fields": [
                                 {
-                                    "type": 11,
+                                    "type": 13,
                                     "typeName": "[u8; 32]"
                                 }
                             ]
@@ -512,7 +610,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 11,
+                "id": 13,
                 "type": {
                     "def": {
                         "array": {
@@ -523,7 +621,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 12,
+                "id": 14,
                 "type": {
                     "def": {
                         "primitive": "u128"
@@ -531,13 +629,13 @@ export function metadata() {
                 }
             },
             {
-                "id": 13,
+                "id": 15,
                 "type": {
                     "def": {
                         "composite": {
                             "fields": [
                                 {
-                                    "type": 11,
+                                    "type": 13,
                                     "typeName": "[u8; 32]"
                                 }
                             ]
@@ -551,7 +649,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 14,
+                "id": 16,
                 "type": {
                     "def": {
                         "primitive": "u64"
@@ -559,7 +657,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 15,
+                "id": 17,
                 "type": {
                     "def": {
                         "primitive": "u32"
@@ -567,7 +665,7 @@ export function metadata() {
                 }
             },
             {
-                "id": 16,
+                "id": 18,
                 "type": {
                     "def": {
                         "variant": {}

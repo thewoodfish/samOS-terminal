@@ -5,7 +5,7 @@ const MAX_CALL_WEIGHT = new BN(5_000_000_000_000).isub(BN_ONE);
 const PROOFSIZE = new BN(1_000_000);
 const storageDepositLimit: BN = new BN(1000);
 
-export async function newAccount(api: any, contract: any, account: any, _type: any, ipfs_address: any) {
+export async function newAccount(api: any, contract: any, account: any, _type: any, ipfs_address: any, ss58_address: any) {
     // Get the initial gas WeightV2 using api.consts.system.blockWeights['maxBlock']
     const gasLimit = api.registry.createType(
         'WeightV2',
@@ -21,7 +21,7 @@ export async function newAccount(api: any, contract: any, account: any, _type: a
             gasLimit: gasLimit,
             storageDepositLimit: null,
             value: new BN('1000000000000000000')
-        }, _type, ipfs_address
+        }, _type, ipfs_address, ss58_address
     )
 
     // Check for errors
@@ -63,7 +63,7 @@ export async function newAccount(api: any, contract: any, account: any, _type: a
             gasLimit: estimatedGas,
             storageDepositLimit: null,
             value: new BN('10000000') // 1 TOKEN or it could be value you want to send to the contract in title
-        }, _type, ipfs_address)
+        }, _type, ipfs_address, ss58_address)
         .signAndSend(account, (res: any) => {
             // Send the transaction, like elsewhere this is a normal extrinsic
             // with the same rules as applied in the API (As with the read example,
@@ -154,15 +154,28 @@ export async function deleteAccount(api: any, contract: any, account: any) {
 
 export async function authAccount(api: any, contract: any, account: any): Promise<any> {
     const { result, output } = await contract.query.authAccount(
-      account.address,
-      {
-        gasLimit: api?.registry.createType('WeightV2', {
-          refTime: MAX_CALL_WEIGHT,
-          proofSize: PROOFSIZE,
-        }) as WeightV2,
-        storageDepositLimit,
-      });
-  
+        account.address,
+        {
+            gasLimit: api?.registry.createType('WeightV2', {
+                refTime: MAX_CALL_WEIGHT,
+                proofSize: PROOFSIZE,
+            }) as WeightV2,
+            storageDepositLimit,
+        });
+
     return result.toHuman();
-  }
-  
+}
+
+export async function didExists(api: any, contract: any, account: any, ss58Address: any): Promise<any> {
+    const { result, output } = await contract.query.didExists(
+        account.address,
+        {
+            gasLimit: api?.registry.createType('WeightV2', {
+                refTime: MAX_CALL_WEIGHT,
+                proofSize: PROOFSIZE,
+            }) as WeightV2,
+            storageDepositLimit,
+        }, ss58Address);
+
+    return result.toHuman();
+}

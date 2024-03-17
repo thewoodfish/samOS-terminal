@@ -36,12 +36,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.authAccount = exports.deleteAccount = exports.newAccount = void 0;
+exports.didExists = exports.authAccount = exports.deleteAccount = exports.newAccount = void 0;
 var util_1 = require("@polkadot/util");
 var MAX_CALL_WEIGHT = new util_1.BN(5000000000000).isub(util_1.BN_ONE);
 var PROOFSIZE = new util_1.BN(1000000);
 var storageDepositLimit = new util_1.BN(1000);
-function newAccount(api, contract, account, _type, ipfs_address) {
+function newAccount(api, contract, account, _type, ipfs_address, ss58_address) {
     return __awaiter(this, void 0, void 0, function () {
         var gasLimit, _a, gasRequired, storageDeposit, result, error, dispatchError, flags, estimatedGas, unsub;
         return __generator(this, function (_b) {
@@ -52,7 +52,7 @@ function newAccount(api, contract, account, _type, ipfs_address) {
                             gasLimit: gasLimit,
                             storageDepositLimit: null,
                             value: new util_1.BN('1000000000000000000')
-                        }, _type, ipfs_address)
+                        }, _type, ipfs_address, ss58_address)
                         // Check for errors
                     ];
                 case 1:
@@ -87,7 +87,7 @@ function newAccount(api, contract, account, _type, ipfs_address) {
                             gasLimit: estimatedGas,
                             storageDepositLimit: null,
                             value: new util_1.BN('10000000') // 1 TOKEN or it could be value you want to send to the contract in title
-                        }, _type, ipfs_address)
+                        }, _type, ipfs_address, ss58_address)
                             .signAndSend(account, function (res) {
                             // Send the transaction, like elsewhere this is a normal extrinsic
                             // with the same rules as applied in the API (As with the read example,
@@ -195,3 +195,23 @@ function authAccount(api, contract, account) {
     });
 }
 exports.authAccount = authAccount;
+function didExists(api, contract, account, ss58Address) {
+    return __awaiter(this, void 0, void 0, function () {
+        var _a, result, output;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0: return [4 /*yield*/, contract.query.didExists(account.address, {
+                        gasLimit: api === null || api === void 0 ? void 0 : api.registry.createType('WeightV2', {
+                            refTime: MAX_CALL_WEIGHT,
+                            proofSize: PROOFSIZE,
+                        }),
+                        storageDepositLimit: storageDepositLimit,
+                    }, ss58Address)];
+                case 1:
+                    _a = _b.sent(), result = _a.result, output = _a.output;
+                    return [2 /*return*/, result.toHuman()];
+            }
+        });
+    });
+}
+exports.didExists = didExists;

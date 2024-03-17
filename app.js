@@ -49,7 +49,7 @@ import * as util from "./utility.js"
 import * as kilt from "./kilt.js";
 
 // blockchain config
-const contract_addr = "5F3HGhYPVDn8nJb4DBNckk4UhE8aR7DTiCgqrPqgNfksM7jG";
+const contract_addr = "5D9qZYvEvETcX7qpGkksjSVGqzwq8tBN1ULgmZS7nxuhCKAf";
 const wsProvider = new WsProvider('ws://127.0.0.1:9944');
 const api = await ApiPromise.create({ provider: wsProvider });
 const contract = new ContractPromise(api, meta.metadata(), contract_addr);
@@ -114,6 +114,77 @@ app.get('/desc', (req, res) => {
     describeSamaritan(req.query, res);
 });
 
+// routes handling SamaritanDB's RPC messages
+
+app.get('/didExists', (req, res) => {
+    didExists(req.query, res);
+});
+
+app.get('/authenticate', (req, res) => {
+    authAccount(req.query, res);
+});
+
+
+// check if DID exists onchain (RPC)
+async function didExists(req, res) {
+    try {
+        // derive the account
+        const mnemonic = req.mnemonic.replaceAll("~", " ");
+        const user = keyring.createFromUri(mnemonic, 'sr25519');
+
+        // query contract to check if DID is recognized onchain
+        await chain.didExists(api, contract, user, req.address).then(result => {
+            let didExists = result.Ok.data == '0x0000' ? true : false;
+
+            // return result
+            return res.send({
+                data: {
+                    did_exists: didExists
+                },
+                error: false
+            })
+        });
+    } catch (e) {
+        return res.send({
+            data: {
+                msg: e.toString()
+            },
+            error: true
+        })
+    }
+}
+
+// check if an account is recognized onchain (RPC)
+async function authAccount(req, res) {
+    try {
+        // get account
+        const mnemonic = req.mnemonic.replaceAll("~", " ");
+        const user = keyring.createFromUri(mnemonic, 'sr25519');
+
+        // call contract to fetch DID document CID
+        await chain.authAccount(api, contract, user).then(async result => {
+            if (JSON.stringify(result).indexOf("error") > -1) {
+                throw new Error("Samaritan account not recognized onchain.");
+            } else {
+                return res.send({
+                    data: {
+                        did: samaritanDID,
+                        nonce: sessionNonce
+                    },
+                    error: false
+                });
+
+            }
+        });
+    } catch (e) {
+        return res.send({
+            data: {
+                msg: e.toString()
+            },
+            error: true
+        })
+    }
+}
 
 // create a new Samaritan
 async function createNewSamaritan(req, res) {
@@ -128,7 +199,7 @@ async function createNewSamaritan(req, res) {
         // upload the DID document to IPFS and store the address in a contract
         await storg.uploadToIPFS(JSON.stringify(lightDID)).then(async addr => {
             // call contract to register account onchain
-            await chain.newAccount(api, contract, user, req.type == "app" ? false : true, addr).then(result => {
+            await chain.newAccount(api, contract, user, req.type == "app" ? false : true, addr, user.address).then(result => {
                 if (result == "Revert" || result == "error") {
                     throw new Error("This account has been registered on the network.");
                 } else {
