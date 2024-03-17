@@ -168,12 +168,10 @@ async function authAccount(req, res) {
             } else {
                 return res.send({
                     data: {
-                        did: samaritanDID,
-                        nonce: sessionNonce
+                        exists: true
                     },
                     error: false
                 });
-
             }
         });
     } catch (e) {
