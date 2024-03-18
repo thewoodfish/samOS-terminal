@@ -139,7 +139,7 @@ async function didExists(req, res) {
             // return result
             return res.send({
                 data: {
-                    did_exists: didExists
+                    exists: didExists
                 },
                 error: false
             })
